@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PlatformService.Data;
+using PlatformService.SyncDataServices.Http;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
@@ -16,6 +17,8 @@ builder.Services.AddSingleton(logger);
 builder.Services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
 builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddHttpClient<ICommandDataClient, HttpCommandDataClient>();
 
 // Add services to the container.
 

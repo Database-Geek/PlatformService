@@ -7,14 +7,26 @@ using ILogger = Serilog.ILogger;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
-Serilog.ILogger logger = new LoggerConfiguration()
+ILogger logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
 builder.Services.AddSingleton(logger);
 
+var env = builder.Environment;
 
-builder.Services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
+if( env.IsProduction())
+{
+  logger.Information("--> Using SqlServer Db");
+  builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("PlatformsConn")));
+}
+else
+{
+  logger.Information("--> Using InMem Db");
+  builder.Services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
+}
+
+
 builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -42,6 +54,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-PrepDb.PrepPopulation(app);
+PrepDb.PrepPopulation(logger, app, env.IsProduction());
 
 app.Run();

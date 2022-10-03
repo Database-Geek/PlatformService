@@ -65,3 +65,4 @@ F:\Microservices\PlatformService\obj\Debug\net6.0\refint\PlatformService.dll
 F:\Microservices\PlatformService\obj\Debug\net6.0\PlatformService.pdb
 F:\Microservices\PlatformService\obj\Debug\net6.0\PlatformService.genruntimeconfig.cache
 F:\Microservices\PlatformService\obj\Debug\net6.0\ref\PlatformService.dll
+F:\Microservices\PlatformService\bin\Debug\net6.0\appsettings.Production.json

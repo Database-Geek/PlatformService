@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using PlatformService.Data;
 using PlatformService.Dtos;
 using PlatformService.Models;
+using PlatformService.SyncDataServices.Http;
 using Serilog;
+using ILogger = Serilog.ILogger;
 
 namespace PlatformService.Controllers
 {
@@ -11,18 +13,28 @@ namespace PlatformService.Controllers
   [ApiController]
   public class PlatformsController : ControllerBase
   {
+    private readonly ILogger _logger;
     private readonly IPlatformRepo _repository;
     private readonly IMapper _mapper;
-    public PlatformsController(IPlatformRepo repository, IMapper mapper)
+    private readonly ICommandDataClient _commandDataClient;
+
+    public PlatformsController(
+      ILogger logger,
+      IPlatformRepo repository, 
+      IMapper mapper,
+      ICommandDataClient commandDataClient)
     {
+      _logger = logger;
       _repository = repository;
       _mapper = mapper;
+      _commandDataClient = commandDataClient;
+
     }
 
     [HttpGet]
     public ActionResult<IEnumerable<PlatformReadDto>> GetPlatforms()
     {
-      Log.Information("--> Getting Platforms.");
+      _logger.Information("--> Getting Platforms.");
 
       var platformItems = _repository.GetAllPlatforms();
 
@@ -45,13 +57,22 @@ namespace PlatformService.Controllers
     }
 
     [HttpPost]
-    public ActionResult<PlatformReadDto> CreatePlatform(PlatformCreateDto platformCreateDto)
+    public async Task<ActionResult<PlatformReadDto>> CreatePlatform(PlatformCreateDto platformCreateDto)
     {
       var platformModel = _mapper.Map<Platform>(platformCreateDto);
       _repository.CreatePlatform(platformModel);
       _repository.SaveChanges();
 
       var platformReadDto = _mapper.Map<PlatformReadDto>(platformModel);
+
+      try
+      {
+        await _commandDataClient.SendPlatformToCommand(platformReadDto);
+      }
+      catch (Exception ex)
+      {
+        _logger.Warning("--> Could not send synchronously. {errorMessage}", ex.Message);
+      }
 
       return CreatedAtRoute(nameof(GetPlatformById), new { Id = platformReadDto.Id}, platformReadDto);
     }

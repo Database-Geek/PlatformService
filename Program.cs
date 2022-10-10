@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using PlatformService.AsyncDataServices;
 using PlatformService.Data;
 using PlatformService.SyncDataServices.Http;
+using PlatformService.SyncDataServices.Grpc;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
@@ -31,6 +33,8 @@ builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddHttpClient<ICommandDataClient, HttpCommandDataClient>();
+builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
+builder.Services.AddGrpc();
 
 // Add services to the container.
 
@@ -53,6 +57,11 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGrpcService<GrpcPlatformService>();
+
+app.MapGet("/protos/platforms.proto", async context => {
+  await context.Response.WriteAsync(File.ReadAllText("Protos/platforms.proto"));
+});
 
 PrepDb.PrepPopulation(logger, app, env.IsProduction());
 
